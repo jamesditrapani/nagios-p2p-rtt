@@ -9,6 +9,7 @@
     - os: What is the device OS, this is required as it helps us determine the correct parsers.
     - device: Hostname of the device.
     - mgmtip: IP the device can be reached via SSH
+    - count: ICMP Packets to send, default 10 (optional)
 
 """
 
@@ -18,7 +19,7 @@ from genie.testbed import load
 
 from unicon.core.errors import SubCommandFailure, ConnectionError
 
-import re, time, sys, ipaddress, argparse
+import re, sys, ipaddress, argparse
 
 class CriticalPingCheck(Exception): pass
 class WarningPingCheck(Exception): pass
@@ -55,7 +56,7 @@ class PingCheck():
 
   def logic(self):
     local, remote = self.get_ip(self.interface)
-    self.test_ping(local, remote)
+    self.test_ping(local, remote, self.count)
 
   def get_ip(self, interface):
     int_info = self.terminal.parse(f'show interfaces {interface}')
@@ -78,16 +79,16 @@ class PingCheck():
     except Exception as e:
       raise CriticalPingCheck(e) from e
 
-  def test_ping(self, source, destination):
+  def test_ping(self, source, destination, count):
     try:
-      result = self.terminal.ping(src_addr=source, addr=destination, extd_ping='yes')
-      match = re.search(r'round-trip min\/avg\/max = (?P<min>\d+)\/(?P<avg>\d+)\/(?P<max>\d+) ms', result)
-      rmin, ravg, rmax = match.group('min'), match.group('avg'), match.group('max')
-      print(f'OK: ICMP Echo/Echo Reply Success | rtmin={rmin};;;; rtavg={ravg};;;; rtmax={rmax};;;;') 
+      result = self.terminal.ping(src_addr=source, addr=destination, extd_ping='yes', count=count, ping_packet_timeout=1)
+      match = re.search(r'Success rate is (?P<pl>\d+) percent \(\d+\/\d+\), round-trip min\/avg\/max = (?P<min>\d+)\/(?P<avg>\d+)\/(?P<max>\d+) ms', result)
+      rmin, ravg, rmax, ploss = match.group('min'), match.group('avg'), match.group('max'), match.group('pl')
+      print(f'OK: ICMP Echo/Echo Reply Success | rtmin={rmin};;;; rtavg={ravg};;;; rtmax={rmax};;;; pl={abs(int(ploss) - 100)};;;;') 
       sys.exit(0)
     except SubCommandFailure as e:
       # SubCommandFailure thrown when output fails
-      raise CriticalPingCheck(f'P2P ICMP Check to {destination} from {source} Failed!')
+      raise CriticalPingCheck(f'P2P ICMP Check to {destination} from {source} Failed! | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -95,6 +96,7 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--device', required=True)
   parser.add_argument('-o', '--os', required=True)
   parser.add_argument('-m', '--mgmtip', required=True)
+  parser.add_argument('-c', '--count', required=False, default=10)
   args, unknown = parser.parse_known_args()
 
   try:
@@ -102,7 +104,8 @@ if __name__ == '__main__':
       device = args.device,
       interface = args.interface,
       ip = args.mgmtip,
-      os = args.os
+      os = args.os,
+      count = args.count
     )
     run.logic()
   except CriticalPingCheck as e:
