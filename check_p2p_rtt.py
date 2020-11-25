@@ -62,6 +62,10 @@ class PingCheck():
     int_info = self.terminal.parse(f'show interfaces {interface}')
     ip_info = int_info[list(int_info.keys())[0]]['ipv4']
 
+    # Ensure interface is not down
+    if int_info[list(int_info.keys())[0]]['line_protocol'] == 'down':
+      raise CriticalPingCheck(f'Interface {interface} is down!')
+
     # Quick check for secondary IPs
     if len(ip_info) > 1:
       raise WarningPingCheck(f'Interface {interface} on {self.device} has more than 1 subnet configured!')
