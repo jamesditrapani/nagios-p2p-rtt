@@ -62,6 +62,10 @@ class PingCheck():
     int_info = self.terminal.parse(f'show interfaces {interface}')
     ip_info = int_info[list(int_info.keys())[0]]['ipv4']
 
+    # check admin down
+    if not int_info[list(int_info.keys())[0]]['enabled']:
+      raise WarningPingCheck(f'Interface {interface} is admin down')
+
     # Ensure interface is not down
     if int_info[list(int_info.keys())[0]]['line_protocol'] == 'down':
       raise CriticalPingCheck(f'Interface {interface} is down!')
