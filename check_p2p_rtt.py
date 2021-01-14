@@ -52,7 +52,7 @@ class PingCheck():
     try:
       self.terminal.connect(init_exec_commands=[], init_config_commands=[], log_stdout=False)
     except ConnectionError:
-      raise CriticalPingCheck(f'SSH timed out while trying to connect to {self.device}')
+      raise CriticalPingCheck(f'SSH timed out while trying to connect to {self.device} | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
   def logic(self):
     local, remote = self.get_ip(self.interface)
@@ -64,20 +64,20 @@ class PingCheck():
 
     # check admin down
     if not int_info[list(int_info.keys())[0]]['enabled']:
-      raise WarningPingCheck(f'Interface {interface} is admin down')
+      raise WarningPingCheck(f'Interface {interface} is admin down | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
     # Ensure interface is not down
     if int_info[list(int_info.keys())[0]]['line_protocol'] == 'down':
-      raise CriticalPingCheck(f'Interface {interface} is down!')
+      raise CriticalPingCheck(f'Interface {interface} is down! | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
     # Quick check for secondary IPs
     if len(ip_info) > 1:
-      raise WarningPingCheck(f'Interface {interface} on {self.device} has more than 1 subnet configured!')
+      raise WarningPingCheck(f'Interface {interface} on {self.device} has more than 1 subnet configured! | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
     key = list(ip_info.keys())[0]
 
     if ip_info[key]['prefix_length'] not in ['31', '30']:
-      raise WarningPingCheck(f'Prefix Length for {key} is not a /31 or /30')
+      raise WarningPingCheck(f'Prefix Length for {key} is not a /31 or /30 | rtmin=0;;;; rtavg=0;;;; rtmax=0;;;; pl=100;;;;')
 
     try:
       local = ip_info[key]['ip']
