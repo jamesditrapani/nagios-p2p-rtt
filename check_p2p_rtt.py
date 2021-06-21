@@ -37,13 +37,21 @@ class PingCheck():
     self.__dict__.update(kwargs)
     structure = {'devices': {
         self.device: {
-          'ip': self.ip,
-          'protocol': 'ssh',
           'type': 'router',
           'os': self.os,
-          'username': 'xxxx',
-          'password': 'xxxx',
-          'enable_password': 'xxxx'
+          'credentials': {
+            'default': {
+               'username': 'xxxx',
+               'password': 'xxxx',
+               'enable_password': 'xxxx'
+            },
+          },
+          'connections': {
+            'default': {
+              'protocol': 'ssh',
+              'ip': self.ip,
+            },
+          },
         }
       }
     }
